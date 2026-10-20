@@ -3,7 +3,7 @@ import { mkdirSync } from "node:fs";
 import { join } from "node:path";
 import { randomUUID } from "node:crypto";
 
-const DATA_DIR = join(process.cwd(), "data");
+const DATA_DIR = process.env.VERCEL ? join("/tmp", "data") : join(process.cwd(), "data");
 const DB_PATH = join(DATA_DIR, "app.db");
 
 declare global {
