@@ -1,4 +1,5 @@
 import type {
+  AiAssessment,
   Animal,
   Appointment,
   AppointmentKind,
@@ -147,6 +148,22 @@ export function toggleTreatmentItem(
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ index, done }),
   }).then((r) => handle(r));
+}
+
+// AI photo scan
+export interface ScanInput {
+  animal_id?: string;
+  note?: string;
+  photos: File[];
+}
+
+export function scanPhotos(input: ScanInput): Promise<{ assessment: AiAssessment }> {
+  const form = new FormData();
+  if (input.animal_id) form.set("animal_id", input.animal_id);
+  if (input.note) form.set("note", input.note);
+  for (const photo of input.photos) form.append("photos", photo);
+
+  return fetch("/api/scan", { method: "POST", body: form }).then((r) => handle(r));
 }
 
 // Appointments

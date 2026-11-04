@@ -3,7 +3,8 @@ import { mkdir, writeFile } from "node:fs/promises";
 import { join } from "node:path";
 import { db, newId, nowIso } from "@/lib/db";
 import { withExtras } from "@/lib/reports";
-import type { HealthReport } from "@/lib/types";
+import { analyzeAnimalPhotos } from "@/lib/gemini";
+import type { Animal, HealthReport } from "@/lib/types";
 
 export async function GET(req: NextRequest) {
   const farmerId = req.nextUrl.searchParams.get("farmerId");
@@ -70,6 +71,7 @@ export async function POST(req: Request) {
   ).run(reportId, animal_id, farmer_id, description, onset, eating, drinking, movement, fever, less_milk, created);
 
   const files = form.getAll("photos").filter((f): f is File => f instanceof File && f.size > 0);
+  const photoBuffers: { data: Buffer; mimeType: string }[] = [];
   if (files.length > 0) {
     const uploadDir = join(process.cwd(), "public", "uploads");
     await mkdir(uploadDir, { recursive: true });
@@ -83,6 +85,31 @@ export async function POST(req: Request) {
       const bytes = Buffer.from(await file.arrayBuffer());
       await writeFile(join(uploadDir, filename), bytes);
       insertPhoto.run(newId(), reportId, filename, nowIso());
+      photoBuffers.push({ data: bytes, mimeType: file.type || "image/jpeg" });
+    }
+  }
+
+  if (photoBuffers.length > 0) {
+    const animal = db.prepare("SELECT * FROM animals WHERE id = ?").get(animal_id) as unknown as Animal | undefined;
+    const result = await analyzeAnimalPhotos({
+      animalType: animal?.type ?? "animal",
+      breed: animal?.breed ?? null,
+      description,
+      onset,
+      eating,
+      drinking,
+      movement,
+      fever: fever === 1,
+      lessMilk: less_milk === 1,
+      photos: photoBuffers,
+    });
+    if (result.assessment) {
+      db.prepare("UPDATE health_reports SET ai_summary = ? WHERE id = ?").run(
+        JSON.stringify(result.assessment),
+        reportId
+      );
+    } else if (result.message) {
+      console.error(`AI scan skipped for report ${reportId}: ${result.message}`);
     }
   }
 

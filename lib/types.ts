@@ -40,6 +40,13 @@ export interface TreatmentItem {
   done: boolean;
 }
 
+export interface AiAssessment {
+  summary: string;
+  possible_conditions: string[];
+  urgency_hint: Urgency;
+  notable_observations: string[];
+}
+
 export interface HealthReport {
   id: string;
   animal_id: string;
@@ -60,6 +67,7 @@ export interface HealthReport {
   next_check_date: string | null;
   created_at: string;
   reviewed_at: string | null;
+  ai_summary: string | null;
 }
 
 export interface ReportPhoto {
@@ -73,6 +81,7 @@ export interface HealthReportWithExtras extends HealthReport {
   animal: Animal;
   photos: ReportPhoto[];
   treatment_items: TreatmentItem[];
+  ai_assessment: AiAssessment | null;
 }
 
 export type AppointmentKind = "message" | "call" | "farm_visit" | "appointment";

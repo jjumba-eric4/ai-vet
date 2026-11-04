@@ -59,7 +59,8 @@ function migrate(database: DatabaseSync) {
       treatment_plan TEXT,
       next_check_date TEXT,
       created_at TEXT NOT NULL,
-      reviewed_at TEXT
+      reviewed_at TEXT,
+      ai_summary TEXT
     );
 
     CREATE TABLE IF NOT EXISTS report_photos (
@@ -81,6 +82,12 @@ function migrate(database: DatabaseSync) {
       created_at TEXT NOT NULL
     );
   `);
+
+  try {
+    database.exec("ALTER TABLE health_reports ADD COLUMN ai_summary TEXT");
+  } catch {
+    // column already exists from a previous migration
+  }
 }
 
 function seed(database: DatabaseSync) {

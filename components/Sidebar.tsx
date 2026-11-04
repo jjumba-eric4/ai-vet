@@ -2,12 +2,13 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Home, PawPrint, Stethoscope, ClipboardList, CalendarDays, PhoneCall, type LucideIcon } from "lucide-react";
+import { Home, PawPrint, Stethoscope, ClipboardList, CalendarDays, PhoneCall, ScanEye, type LucideIcon } from "lucide-react";
 import type { Role, User as UserType } from "@/lib/types";
 import { Logo } from "@/components/Logo";
 
 const FARMER_LINKS: { href: string; label: string; Icon: LucideIcon }[] = [
   { href: "/home", label: "Home", Icon: Home },
+  { href: "/scan", label: "AI Photo Scan", Icon: ScanEye },
   { href: "/animals", label: "My Animals", Icon: PawPrint },
   { href: "/vets", label: "Veterinarians", Icon: Stethoscope },
   { href: "/reports", label: "Health Records", Icon: ClipboardList },

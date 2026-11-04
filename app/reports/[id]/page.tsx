@@ -58,6 +58,22 @@ export default function ReportDetailPage({ params }: { params: Promise<{ id: str
           </div>
         )}
 
+        {report.ai_assessment && (
+          <Card className="space-y-2">
+            <div className="flex items-center justify-between">
+              <p className="text-sm font-semibold text-navy">AI preliminary scan</p>
+              <Badge tone={urgencyTone(report.ai_assessment.urgency_hint)}>
+                {urgencyLabel(report.ai_assessment.urgency_hint)}
+              </Badge>
+            </div>
+            <p className="text-sm text-muted">{report.ai_assessment.summary}</p>
+            {report.ai_assessment.possible_conditions.length > 0 && (
+              <p className="text-xs text-muted">Possible: {report.ai_assessment.possible_conditions.join(", ")}</p>
+            )}
+            <p className="text-xs text-muted">Generated from your photos — not a diagnosis. The vet&apos;s review is final.</p>
+          </Card>
+        )}
+
         <Card className="space-y-3">
           <h2 className="text-sm font-semibold text-navy">Reported symptoms</h2>
           <p className="text-sm text-muted">{report.description}</p>

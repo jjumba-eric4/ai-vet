@@ -68,6 +68,29 @@ export default function VetReportReviewPage({ params }: { params: Promise<{ id: 
           </div>
         )}
 
+        {report.ai_assessment && (
+          <Card className="space-y-2">
+            <div className="flex items-center justify-between">
+              <p className="text-sm font-semibold text-navy">AI preliminary scan</p>
+              <Badge tone={urgencyTone(report.ai_assessment.urgency_hint)}>
+                {urgencyLabel(report.ai_assessment.urgency_hint)}
+              </Badge>
+            </div>
+            <p className="text-sm text-muted">{report.ai_assessment.summary}</p>
+            {report.ai_assessment.possible_conditions.length > 0 && (
+              <p className="text-xs text-muted">Possible: {report.ai_assessment.possible_conditions.join(", ")}</p>
+            )}
+            {report.ai_assessment.notable_observations.length > 0 && (
+              <ul className="space-y-1 text-xs text-muted">
+                {report.ai_assessment.notable_observations.map((o, i) => (
+                  <li key={i}>• {o}</li>
+                ))}
+              </ul>
+            )}
+            <p className="text-xs text-muted">Generated from the farmer&apos;s photos — not a diagnosis. Your review is final.</p>
+          </Card>
+        )}
+
         <Card className="space-y-3">
           <h2 className="text-sm font-semibold text-navy">Reported symptoms</h2>
           <p className="text-sm text-muted">{report.description}</p>

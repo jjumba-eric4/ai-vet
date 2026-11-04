@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { Camera, Stethoscope, PawPrint, ClipboardList, CalendarDays, PhoneCall, type LucideIcon } from "lucide-react";
+import { Camera, Stethoscope, PawPrint, ClipboardList, CalendarDays, PhoneCall, ScanEye, type LucideIcon } from "lucide-react";
 import { useRequireProfile, useAppointments } from "@/lib/hooks";
 import { Card, Spinner } from "@/components/ui";
 import { Logo } from "@/components/Logo";
@@ -44,6 +44,7 @@ export default function FarmerHomePage() {
       </Link>
 
       <div className="mb-4 grid grid-cols-2 gap-3 md:mb-6 md:grid-cols-4 md:gap-4">
+        <DashCard href="/scan" Icon={ScanEye} label="AI Photo Scan" />
         <DashCard href="/vets" Icon={Stethoscope} label="Contact a Veterinarian" />
         <DashCard href="/animals" Icon={PawPrint} label="My Livestock" />
         <DashCard href="/reports" Icon={ClipboardList} label="Health Records" />

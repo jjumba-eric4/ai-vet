@@ -130,6 +130,11 @@ export function useToggleTreatmentItem() {
   });
 }
 
+// AI photo scan
+export function useScanPhotos() {
+  return useMutation({ mutationFn: api.scanPhotos });
+}
+
 // Appointments
 export function useAppointments(filter: api.AppointmentsFilter) {
   return useQuery({
