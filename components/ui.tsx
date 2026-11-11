@@ -1,3 +1,7 @@
+"use client";
+
+import { useEffect, useState } from "react";
+import { Loader2 } from "lucide-react";
 import type { ButtonHTMLAttributes, ReactNode } from "react";
 
 export function Card({ children, className = "" }: { children: ReactNode; className?: string }) {
@@ -54,3 +58,63 @@ export function Field({ label, children }: { label: string; children: ReactNode 
 
 export const inputClass =
   "w-full rounded-xl border border-border bg-card px-4 py-3 text-sm text-navy placeholder:text-muted focus:border-teal focus:outline-none";
+
+const DEFAULT_AI_MESSAGES = [
+  "Uploading photo…",
+  "Looking closely at the photo…",
+  "Checking for visible signs of illness or injury…",
+  "Comparing with common livestock conditions…",
+  "Finishing up the assessment…",
+];
+
+// Progress is a visual approximation (we don't get real progress from the model server) —
+// it exists to reassure the farmer the app hasn't frozen during a slow cold-start inference.
+export function AiProgress({
+  title = "AI is analyzing the photo…",
+  messages = DEFAULT_AI_MESSAGES,
+  estimateSeconds = 45,
+  className = "",
+}: {
+  title?: string;
+  messages?: string[];
+  estimateSeconds?: number;
+  className?: string;
+}) {
+  const [messageIndex, setMessageIndex] = useState(0);
+  const [elapsed, setElapsed] = useState(0);
+
+  useEffect(() => {
+    const messageTimer = setInterval(() => setMessageIndex((i) => (i + 1) % messages.length), 3000);
+    const clock = setInterval(() => setElapsed((s) => s + 1), 1000);
+    return () => {
+      clearInterval(messageTimer);
+      clearInterval(clock);
+    };
+  }, [messages.length]);
+
+  const progress = Math.min(96, (elapsed / estimateSeconds) * 100);
+
+  return (
+    <Card className={`space-y-3 ${className}`}>
+      <div className="flex items-center gap-3">
+        <span className="relative flex h-10 w-10 flex-none items-center justify-center">
+          <span className="absolute inset-0 animate-ping rounded-full bg-teal/30" />
+          <span className="relative flex h-10 w-10 items-center justify-center rounded-full bg-teal/15 text-teal-dark">
+            <Loader2 size={20} className="animate-spin" />
+          </span>
+        </span>
+        <div className="min-w-0 flex-1">
+          <p className="text-sm font-semibold text-navy">{title}</p>
+          <p className="truncate text-xs text-muted">{messages[messageIndex]}</p>
+        </div>
+      </div>
+      <div className="h-1.5 w-full overflow-hidden rounded-full bg-border">
+        <div
+          className="h-full rounded-full bg-teal transition-all duration-700 ease-out"
+          style={{ width: `${progress}%` }}
+        />
+      </div>
+      <p className="text-right text-[11px] text-muted">{elapsed}s · can take up to a couple of minutes on a cold start</p>
+    </Card>
+  );
+}

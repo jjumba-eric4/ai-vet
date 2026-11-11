@@ -40,11 +40,20 @@ export interface TreatmentItem {
   done: boolean;
 }
 
+export type IdentificationConfidence = "low" | "medium" | "high";
+
+export interface IdentifiedAnimal {
+  species: string;
+  breed: string | null;
+  confidence: IdentificationConfidence;
+}
+
 export interface AiAssessment {
   summary: string;
   possible_conditions: string[];
   urgency_hint: Urgency;
   notable_observations: string[];
+  identified_animal: IdentifiedAnimal;
 }
 
 export interface HealthReport {

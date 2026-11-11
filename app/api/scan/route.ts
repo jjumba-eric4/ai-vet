@@ -1,21 +1,15 @@
-import { db } from "@/lib/db";
-import { analyzeAnimalPhotos } from "@/lib/gemini";
-import type { Animal } from "@/lib/types";
+import { analyzeAnimalPhotos } from "@/lib/ollama";
+
+export const maxDuration = 180;
 
 export async function POST(req: Request) {
   const form = await req.formData();
 
-  const animalId = form.get("animal_id");
   const note = form.get("note");
   const files = form.getAll("photos").filter((f): f is File => f instanceof File && f.size > 0);
 
   if (files.length === 0) {
     return Response.json({ error: "Add at least one photo to scan" }, { status: 400 });
-  }
-
-  let animal: Animal | undefined;
-  if (typeof animalId === "string" && animalId) {
-    animal = db.prepare("SELECT * FROM animals WHERE id = ?").get(animalId) as unknown as Animal | undefined;
   }
 
   const photos = await Promise.all(
@@ -26,8 +20,8 @@ export async function POST(req: Request) {
   );
 
   const result = await analyzeAnimalPhotos({
-    animalType: animal?.type ?? "animal",
-    breed: animal?.breed ?? null,
+    animalType: "animal",
+    breed: null,
     description: typeof note === "string" && note.trim() ? note.trim() : undefined,
     photos,
   });

@@ -3,8 +3,10 @@ import { mkdir, writeFile } from "node:fs/promises";
 import { join } from "node:path";
 import { db, newId, nowIso } from "@/lib/db";
 import { withExtras } from "@/lib/reports";
-import { analyzeAnimalPhotos } from "@/lib/gemini";
+import { analyzeAnimalPhotos, sanitizeClientAssessment } from "@/lib/ollama";
 import type { Animal, HealthReport } from "@/lib/types";
+
+export const maxDuration = 180;
 
 export async function GET(req: NextRequest) {
   const farmerId = req.nextUrl.searchParams.get("farmerId");
@@ -90,26 +92,43 @@ export async function POST(req: Request) {
   }
 
   if (photoBuffers.length > 0) {
-    const animal = db.prepare("SELECT * FROM animals WHERE id = ?").get(animal_id) as unknown as Animal | undefined;
-    const result = await analyzeAnimalPhotos({
-      animalType: animal?.type ?? "animal",
-      breed: animal?.breed ?? null,
-      description,
-      onset,
-      eating,
-      drinking,
-      movement,
-      fever: fever === 1,
-      lessMilk: less_milk === 1,
-      photos: photoBuffers,
-    });
-    if (result.assessment) {
-      db.prepare("UPDATE health_reports SET ai_summary = ? WHERE id = ?").run(
-        JSON.stringify(result.assessment),
-        reportId
-      );
-    } else if (result.message) {
-      console.error(`AI scan skipped for report ${reportId}: ${result.message}`);
+    // If the farmer already ran /api/scan on these exact photos, reuse that result instead of
+    // paying for a second (slow, CPU-bound) AI pass.
+    const carriedOver = sanitizeClientAssessment(
+      (() => {
+        try {
+          const raw = form.get("ai_assessment");
+          return typeof raw === "string" ? JSON.parse(raw) : null;
+        } catch {
+          return null;
+        }
+      })()
+    );
+
+    if (carriedOver) {
+      db.prepare("UPDATE health_reports SET ai_summary = ? WHERE id = ?").run(JSON.stringify(carriedOver), reportId);
+    } else {
+      const animal = db.prepare("SELECT * FROM animals WHERE id = ?").get(animal_id) as unknown as Animal | undefined;
+      const result = await analyzeAnimalPhotos({
+        animalType: animal?.type ?? "animal",
+        breed: animal?.breed ?? null,
+        description,
+        onset,
+        eating,
+        drinking,
+        movement,
+        fever: fever === 1,
+        lessMilk: less_milk === 1,
+        photos: photoBuffers,
+      });
+      if (result.assessment) {
+        db.prepare("UPDATE health_reports SET ai_summary = ? WHERE id = ?").run(
+          JSON.stringify(result.assessment),
+          reportId
+        );
+      } else if (result.message) {
+        console.error(`AI scan skipped for report ${reportId}: ${result.message}`);
+      }
     }
   }
 

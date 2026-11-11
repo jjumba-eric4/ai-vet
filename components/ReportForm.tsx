@@ -4,8 +4,17 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { useSubmitReport } from "@/lib/hooks";
 import { PageHeader } from "@/components/PageHeader";
-import { Button, Field, inputClass } from "@/components/ui";
+import { AiProgress, Badge, Button, Card, Field, inputClass } from "@/components/ui";
 import type { Animal, Level, Movement, Onset } from "@/lib/types";
+import type { ScanHandoff } from "@/lib/scan-handoff";
+
+const REPORT_SUBMIT_MESSAGES = [
+  "Saving the report…",
+  "Uploading photos…",
+  "AI is giving the photos a preliminary look…",
+  "Checking for visible signs of illness or injury…",
+  "Getting everything ready for the vet…",
+];
 
 const ONSETS: { value: Onset; label: string }[] = [
   { value: "today", label: "Today" },
@@ -30,26 +39,31 @@ export function ReportForm({
   farmerId,
   animals,
   initialAnimalId,
+  scanHandoff,
 }: {
   farmerId: string;
   animals: Animal[];
   initialAnimalId?: string;
+  scanHandoff?: ScanHandoff;
 }) {
   const router = useRouter();
   const submitReport = useSubmitReport();
 
   const [animalId, setAnimalId] = useState(initialAnimalId ?? animals[0]?.id ?? "");
-  const [description, setDescription] = useState("");
+  const [description, setDescription] = useState(scanHandoff?.note ?? "");
   const [onset, setOnset] = useState<Onset>("today");
   const [eating, setEating] = useState<Level>("normal");
   const [drinking, setDrinking] = useState<Level>("normal");
   const [movement, setMovement] = useState<Movement>("normal");
   const [fever, setFever] = useState(false);
   const [lessMilk, setLessMilk] = useState(false);
-  const [photos, setPhotos] = useState<File[]>([]);
+  const [photos, setPhotos] = useState<File[]>(scanHandoff?.photos ?? []);
 
   const selectedAnimal = animals.find((a) => a.id === animalId);
   const canSubmit = animalId && description.trim().length > 0 && !submitReport.isPending;
+  // The carried-over assessment only still applies if the farmer hasn't touched the photo picker
+  // since arriving from the scan page (photos keeps the exact array reference from scanHandoff).
+  const carriedAssessment = scanHandoff && photos === scanHandoff.photos ? scanHandoff.assessment : undefined;
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -65,6 +79,7 @@ export function ReportForm({
       fever,
       less_milk: lessMilk,
       photos,
+      ai_assessment: carriedAssessment,
     });
     router.push(`/reports/${report.id}`);
   }
@@ -111,8 +126,26 @@ export function ReportForm({
             onChange={(e) => setPhotos(Array.from(e.target.files ?? []))}
             className="block w-full text-sm text-muted file:mr-3 file:rounded-full file:border-0 file:bg-navy file:px-4 file:py-2 file:text-sm file:font-semibold file:text-white"
           />
-          {photos.length > 0 && <p className="mt-1 text-xs text-muted">{photos.length} photo(s) selected</p>}
+          {photos.length > 0 && (
+            <p className="mt-1 text-xs text-muted">
+              {photos.length} photo(s) selected
+              {photos.length > 1 && !carriedAssessment ? " — all are saved for the vet, only the first is analyzed by AI" : ""}
+            </p>
+          )}
         </Field>
+
+        {carriedAssessment && (
+          <Card className="space-y-1 bg-teal/10">
+            <div className="flex items-center justify-between">
+              <p className="text-sm font-semibold text-navy">Using your AI Photo Scan results</p>
+              <Badge tone="teal">{carriedAssessment.identified_animal.species}</Badge>
+            </div>
+            <p className="text-xs text-muted">
+              The vet will see this preliminary read with your photos — no need to re-scan. Changing the photos
+              above will clear it.
+            </p>
+          </Card>
+        )}
 
         <Field label="3. Describe the symptoms">
           <textarea
@@ -152,6 +185,15 @@ export function ReportForm({
         <Button type="submit" variant="secondary" className="w-full" disabled={!canSubmit}>
           {submitReport.isPending ? "Sending…" : "Send to a Veterinarian"}
         </Button>
+
+        {submitReport.isPending && (
+          <AiProgress
+            title={photos.length > 0 && !carriedAssessment ? "Sending report & running AI pre-check…" : "Sending report…"}
+            messages={photos.length > 0 && !carriedAssessment ? REPORT_SUBMIT_MESSAGES : REPORT_SUBMIT_MESSAGES.slice(0, 2)}
+            estimateSeconds={photos.length > 0 && !carriedAssessment ? 45 : 8}
+          />
+        )}
+
         <p className="text-center text-xs text-muted">
           A veterinarian will review your photos and answers and get back to you.
         </p>

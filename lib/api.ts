@@ -103,6 +103,8 @@ export interface NewReportInput {
   fever: boolean;
   less_milk: boolean;
   photos: File[];
+  /** A prior AI scan assessment for these exact photos — lets the server skip re-running the AI. */
+  ai_assessment?: AiAssessment;
 }
 
 export function submitReport(input: NewReportInput): Promise<HealthReportWithExtras> {
@@ -116,6 +118,7 @@ export function submitReport(input: NewReportInput): Promise<HealthReportWithExt
   form.set("movement", input.movement);
   form.set("fever", String(input.fever));
   form.set("less_milk", String(input.less_milk));
+  if (input.ai_assessment) form.set("ai_assessment", JSON.stringify(input.ai_assessment));
   for (const photo of input.photos) form.append("photos", photo);
 
   return fetch("/api/reports", { method: "POST", body: form }).then((r) => handle(r));
@@ -152,14 +155,12 @@ export function toggleTreatmentItem(
 
 // AI photo scan
 export interface ScanInput {
-  animal_id?: string;
   note?: string;
   photos: File[];
 }
 
 export function scanPhotos(input: ScanInput): Promise<{ assessment: AiAssessment }> {
   const form = new FormData();
-  if (input.animal_id) form.set("animal_id", input.animal_id);
   if (input.note) form.set("note", input.note);
   for (const photo of input.photos) form.append("photos", photo);
 
