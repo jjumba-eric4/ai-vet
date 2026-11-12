@@ -35,6 +35,13 @@ const MOVEMENTS: { value: Movement; label: string }[] = [
   { value: "can't stand", label: "Can't stand" },
 ];
 
+// If the farmer didn't type a note on the scan page, start the symptoms field from what the AI
+// already observed in the photo rather than leaving it blank.
+function initialDescription(scanHandoff?: ScanHandoff): string {
+  if (scanHandoff?.note) return scanHandoff.note;
+  return scanHandoff?.assessment.notable_observations.join(". ") ?? "";
+}
+
 export function ReportForm({
   farmerId,
   animals,
@@ -50,7 +57,7 @@ export function ReportForm({
   const submitReport = useSubmitReport();
 
   const [animalId, setAnimalId] = useState(initialAnimalId ?? animals[0]?.id ?? "");
-  const [description, setDescription] = useState(scanHandoff?.note ?? "");
+  const [description, setDescription] = useState(() => initialDescription(scanHandoff));
   const [onset, setOnset] = useState<Onset>("today");
   const [eating, setEating] = useState<Level>("normal");
   const [drinking, setDrinking] = useState<Level>("normal");
@@ -138,7 +145,10 @@ export function ReportForm({
           <Card className="space-y-1 bg-teal/10">
             <div className="flex items-center justify-between">
               <p className="text-sm font-semibold text-navy">Using your AI Photo Scan results</p>
-              <Badge tone="teal">{carriedAssessment.identified_animal.species}</Badge>
+              <Badge tone="teal">
+                {carriedAssessment.identified_animal.species}
+                {carriedAssessment.identified_animal.breed ? `, ${carriedAssessment.identified_animal.breed}` : ""}
+              </Badge>
             </div>
             <p className="text-xs text-muted">
               The vet will see this preliminary read with your photos — no need to re-scan. Changing the photos

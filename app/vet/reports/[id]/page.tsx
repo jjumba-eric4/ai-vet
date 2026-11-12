@@ -55,7 +55,12 @@ export default function VetReportReviewPage({ params }: { params: Promise<{ id: 
       />
       <div className="space-y-4 px-5 pb-10 md:max-w-2xl md:px-0">
         <Card className="space-y-2 text-sm">
-          <Row label="Breed" value={[report.animal.breed, report.animal.sex, report.animal.age].filter(Boolean).join(", ")} />
+          <Row
+            label="Breed"
+            value={[report.animal.breed ?? report.ai_assessment?.identified_animal.breed, report.animal.sex, report.animal.age]
+              .filter(Boolean)
+              .join(", ")}
+          />
           <Row label="Farm location" value={report.animal.farm_location} />
         </Card>
 
@@ -75,6 +80,16 @@ export default function VetReportReviewPage({ params }: { params: Promise<{ id: 
               <Badge tone={urgencyTone(report.ai_assessment.urgency_hint)}>
                 {urgencyLabel(report.ai_assessment.urgency_hint)}
               </Badge>
+            </div>
+            <div className="flex flex-wrap items-center gap-1.5">
+              <span className="text-xs text-muted">AI identified:</span>
+              <Badge tone="muted">
+                {report.ai_assessment.identified_animal.species}
+                {report.ai_assessment.identified_animal.breed ? `, ${report.ai_assessment.identified_animal.breed}` : ""}
+              </Badge>
+              {report.ai_assessment.identified_animal.confidence !== "high" && (
+                <span className="text-xs text-muted">({report.ai_assessment.identified_animal.confidence} confidence)</span>
+              )}
             </div>
             <p className="text-sm text-muted">{report.ai_assessment.summary}</p>
             {report.ai_assessment.possible_conditions.length > 0 && (
